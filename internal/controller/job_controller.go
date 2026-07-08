@@ -63,14 +63,14 @@ func newIds(e jobicov1.Event, jobdef jobicov1.Job) ids {
 	}
 }
 
-// +kubebuilder:rbac:groups=jobico.coeux.dev,resources=jobs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=jobico.coeux.dev,resources=jobs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=jobico.coeux.dev,resources=jobs/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;update;patch;delete;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=create;update;patch;delete;list;watch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=create;update;patch;delete;list;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;update;patch;delete;list;watch
-
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 func (r *JobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -323,7 +323,7 @@ func (r *JobReconciler) ingressDefinition(i ids, jobdef jobicov1.Job, e jobicov1
 			Name:      i.Ingress,
 			Namespace: jobdef.Namespace,
 			Annotations: map[string]string{
-			//	"nginx.ingress.kubernetes.io/ssl-redirect": "true",
+				//	"nginx.ingress.kubernetes.io/ssl-redirect": "true",
 				"event": e.Name,
 			},
 		},
@@ -370,7 +370,7 @@ func (r *JobReconciler) serviceDefinition(serviceName string, jobdef jobicov1.Jo
 		Spec: core.ServiceSpec{
 			Selector: map[string]string{"app": "listener", "event": e.Name},
 			Ports:    []core.ServicePort{{Port: 8080, TargetPort: intstr.FromInt(8080)}},
-            Type:     core.ServiceTypeLoadBalancer,
+			Type:     core.ServiceTypeLoadBalancer,
 		},
 	}
 	if err := ctrl.SetControllerReference(&jobdef, &service, r.Scheme); err != nil {
@@ -396,11 +396,11 @@ func (r *JobReconciler) deploymentDefinition(deploymentName string, jobdef jobic
 					Labels: map[string]string{"app": "listener", "event": e.Name},
 				},
 				Spec: core.PodSpec{
-                    ImagePullSecrets: []core.LocalObjectReference{
-                        {
-                            Name: "reg-cred-secret",
-                        },
-                    },
+					ImagePullSecrets: []core.LocalObjectReference{
+						{
+							Name: "reg-cred-secret",
+						},
+					},
 					RestartPolicy: core.RestartPolicyAlways,
 					Volumes: []core.Volume{
 						{
@@ -417,8 +417,8 @@ func (r *JobReconciler) deploymentDefinition(deploymentName string, jobdef jobic
 					},
 					Containers: []core.Container{
 						{
-							Name:            "listener-" + e.Name,
-							Image:           "reg.jobico.org/listener:v1",
+							Name:  "listener-" + e.Name,
+							Image: "reg.jobico.org/listener:v1",
 							//ImagePullPolicy: core.PullNever,
 							Ports: []core.ContainerPort{
 								{
@@ -469,11 +469,11 @@ func (r *JobReconciler) jobDefinition(jobName string, jobdef jobicov1.Job, evt j
 					Labels: map[string]string{"app": "exec", "event": evt.Name, "owner": jobdef.Name},
 				},
 				Spec: core.PodSpec{
-                    ImagePullSecrets: []core.LocalObjectReference{
-                        {
-                            Name: "reg-cred-secret",
-                        },
-                    },
+					ImagePullSecrets: []core.LocalObjectReference{
+						{
+							Name: "reg-cred-secret",
+						},
+					},
 					RestartPolicy: core.RestartPolicyOnFailure,
 					Volumes: []core.Volume{
 						{
@@ -487,9 +487,9 @@ func (r *JobReconciler) jobDefinition(jobName string, jobdef jobicov1.Job, evt j
 					},
 					Containers: []core.Container{
 						{
-							Name:            "exec-" + evt.Name,
-							Image:           "reg.jobico.org/exec:v1",
-                            //ImagePullPolicy: core.PullNever,
+							Name:  "exec-" + evt.Name,
+							Image: "reg.jobico.org/exec:v1",
+							//ImagePullPolicy: core.PullNever,
 							Env: []core.EnvVar{
 								{
 									Name:  "event",
@@ -538,11 +538,11 @@ func (r *JobReconciler) jobDefinitionInt(jobName string, jobdef jobicov1.Job, ev
 					Labels: map[string]string{"app": "exec", "event": evt.Name, "owner": jobdef.Name},
 				},
 				Spec: core.PodSpec{
-                    ImagePullSecrets: []core.LocalObjectReference{
-                        {
-                            Name: "reg-cred-secret",
-                        },
-                    },
+					ImagePullSecrets: []core.LocalObjectReference{
+						{
+							Name: "reg-cred-secret",
+						},
+					},
 					RestartPolicy: core.RestartPolicyOnFailure,
 					Volumes: []core.Volume{
 						{
@@ -556,9 +556,9 @@ func (r *JobReconciler) jobDefinitionInt(jobName string, jobdef jobicov1.Job, ev
 					},
 					Containers: []core.Container{
 						{
-							Name:            "exec-" + evt.Name,
-							Image:           "reg.jobico.org/exec:v1",
-                            //ImagePullPolicy: core.PullNever,
+							Name:  "exec-" + evt.Name,
+							Image: "reg.jobico.org/exec:v1",
+							//ImagePullPolicy: core.PullNever,
 							Env: []core.EnvVar{
 								{
 									Name:  "event",

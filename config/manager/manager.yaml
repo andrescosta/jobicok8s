@@ -72,7 +72,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: reg.jobico.org/controller:latest
+        image: reg.jobico.local/controller:latest
         #imagePullPolicy: Never
         name: manager
         securityContext:
